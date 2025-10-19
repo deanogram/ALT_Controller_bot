@@ -16,11 +16,13 @@ class ChannelDefaults(BaseModel):
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_ENV_PATH = PROJECT_ROOT / ".env"
+EXAMPLE_ENV_PATH = PROJECT_ROOT / ".env.example"
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=(PROJECT_ROOT / ".env", ".env"),
+        env_file=(DEFAULT_ENV_PATH, ".env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
     )
@@ -33,17 +35,38 @@ class Settings(BaseSettings):
 
     channel_defaults: ChannelDefaults = Field(default_factory=ChannelDefaults)
 
+    @field_validator("webhook_url", mode="before")
+    @classmethod
+    def _empty_string_to_none(cls, value: str | AnyHttpUrl | None) -> AnyHttpUrl | None:
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
     @field_validator("owner_ids", mode="before")
     @classmethod
-    def _split_owner_ids(cls, value: List[int] | str | None) -> List[int] | None:
+    def _split_owner_ids(
+        cls, value: List[int] | str | int | None
+    ) -> List[int] | None:
         if isinstance(value, str):
             return [int(item.strip()) for item in value.split(",") if item.strip()]
+        if isinstance(value, int):
+            return [value]
         return value
 
 
 @lru_cache
 def load_settings() -> Settings:
     try:
+        env_files: list[Path | str] = []
+
+        if DEFAULT_ENV_PATH.exists():
+            env_files.append(DEFAULT_ENV_PATH)
+        if EXAMPLE_ENV_PATH.exists():
+            env_files.append(EXAMPLE_ENV_PATH)
+
+        if env_files:
+            return Settings(_env_file=tuple(env_files))
+
         return Settings()
     except ValidationError as exc:
         missing_fields = [
