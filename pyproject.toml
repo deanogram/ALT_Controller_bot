@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "alt-controller-bot"
+version = "0.1.0"
+description = "Universal Telegram channel management bot"
+authors = [
+  {name = "ALT Controller Team"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "aiogram>=3.4.1",
+  "fastapi>=0.110.0",
+  "uvicorn[standard]>=0.29.0",
+  "pydantic>=2.6.1",
+  "pydantic-settings>=2.2.1",
+  "SQLAlchemy>=2.0.27",
+  "asyncpg>=0.29.0",
+  "alembic>=1.13.1",
+  "redis[hiredis]>=5.0.1",
+  "python-dateutil>=2.8.2"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "pytest-asyncio>=0.23.5",
+  "black>=24.2.0",
+  "ruff>=0.3.0"
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I", "UP", "B", "SIM", "ASYNC"]
+ignore = ["B008"]
+
+[tool.ruff.isort]
+known-first-party = ["alt_controller_bot"]
+
