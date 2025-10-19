@@ -2,7 +2,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import List
 
-from pydantic import AnyHttpUrl, BaseModel, Field, field_validator
+from pydantic import AnyHttpUrl, BaseModel, Field, ValidationError, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -43,7 +43,24 @@ class Settings(BaseSettings):
 
 @lru_cache
 def load_settings() -> Settings:
-    return Settings()
+    try:
+        return Settings()
+    except ValidationError as exc:
+        missing_fields = [
+            " -> ".join(str(part) for part in error.get("loc", ()))
+            for error in exc.errors()
+            if error.get("type") == "missing"
+        ]
+        missing_message = (
+            f"Missing required settings: {', '.join(missing_fields)}. "
+            if missing_fields
+            else "Missing required settings. "
+        )
+        raise RuntimeError(
+            missing_message
+            + "Set the corresponding environment variables or create a '.env' file "
+            f"at {PROJECT_ROOT / '.env'} based on '.env.example'."
+        ) from exc
 
 
 settings = load_settings()
